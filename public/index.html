@@ -1,1 +1,104 @@
-..
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ระบบจัดการคิวงาน Real-Time</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-top">
+      <div>
+        <h1>ระบบจัดการคิวงาน</h1>
+        <div class="live-status" id="liveStatus">● กำลังเชื่อมต่อ Real-Time...</div>
+      </div>
+      <button class="btn-primary" id="btnOpenModal">+ เพิ่มคิว</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="label">คิวทั้งหมด</span>
+        <b id="statTotal">0</b>
+      </div>
+      <div class="stat-card danger">
+        <span class="label">ยังไม่เสร็จ</span>
+        <b id="statPending" class="text-red">0</b>
+      </div>
+      <div class="stat-card success">
+        <span class="label">เสร็จแล้ว</span>
+        <b id="statCompleted" class="text-green">0</b>
+      </div>
+      <div class="stat-card income">
+        <span class="label">ยอดเงินรวม</span>
+        <b id="statIncome" class="text-blue">฿0</b>
+      </div>
+    </div>
+
+    <div class="controls-bar">
+      <input type="text" id="searchInput" placeholder="🔍 ค้นหาเลขคิว, ชื่องาน...">
+      <div class="filter-tabs">
+        <button class="tab-btn active" data-filter="all">ทั้งหมด</button>
+        <button class="tab-btn" data-filter="pending">ยังไม่เสร็จ (แดง)</button>
+        <button class="tab-btn" data-filter="completed">เสร็จแล้ว (เขียว)</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="queue-container">
+    <div id="queueList" class="queue-list"></div>
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <p>ยังไม่มีรายการคิว</p>
+    </div>
+  </main>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">เพิ่มคิวงานใหม่</h2>
+        <button class="btn-close" id="btnCloseModal">&times;</button>
+      </div>
+      <form id="queueForm">
+        <input type="hidden" id="editId">
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="queueNo">เลขคิวที่ *</label>
+            <input type="text" id="queueNo" required placeholder="เช่น Q-001">
+          </div>
+          <div class="form-group flex-1">
+            <label for="amount">จำนวนเงิน (บาท) *</label>
+            <input type="number" id="amount" required min="0" step="any" placeholder="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="date">วันที่ *</label>
+            <input type="date" id="date" required>
+          </div>
+          <div class="form-group flex-1">
+            <label for="time">เวลา *</label>
+            <input type="time" id="time" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="jobTitle">งานที่รับมา *</label>
+          <textarea id="jobTitle" rows="3" required placeholder="ระบุชื่องาน หรือรายละเอียดที่รับมา..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="notes">หมายเหตุ (ถ้ามี)</label>
+          <input type="text" id="notes" placeholder="เช่น นัดรับพรุ่งนี้, มัดจำแล้ว">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="btnCancelModal">ยกเลิก</button>
+          <button type="submit" class="btn-primary" id="btnSave">บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
