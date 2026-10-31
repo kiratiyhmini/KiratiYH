@@ -10,25 +10,33 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 const PORT = process.env.PORT || 3000;
+
+// กำหนดตำแหน่งเก็บไฟล์ข้อมูลไว้ที่โฟลเดอร์หลัก (ไม่ต้องมีโฟลเดอร์ data)
 const DATA_FILE = path.join(__dirname, 'queues.json');
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
+// รองรับการเปิดหน้าเว็บทั้งจากโฟลเดอร์ public และหน้าหลัก
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
+
+// ฟังก์ชันโหลดข้อมูล
 function loadQueues() {
   try {
     if (!fs.existsSync(DATA_FILE)) {
-      fs.writeFileSync(DATA_FILE, JSON.stringify([]));
+      fs.writeFileSync(DATA_FILE, JSON.stringify([]), 'utf-8');
       return [];
     }
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+    return JSON.parse(raw);
   } catch (err) {
     console.error('Error reading data:', err);
     return [];
   }
 }
 
+// ฟังก์ชันบันทึกข้อมูล
 function saveQueues(data) {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
@@ -39,6 +47,21 @@ function saveQueues(data) {
 
 let queues = loadQueues();
 
+// จัดการหน้าแรก ป้องกันปัญหา Cannot GET /
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/socket.io/')) return next();
+  const publicPath = path.join(__dirname, 'public', 'index.html');
+  const rootPath = path.join(__dirname, 'index.html');
+  if (fs.existsSync(publicPath)) {
+    res.sendFile(publicPath);
+  } else if (fs.existsSync(rootPath)) {
+    res.sendFile(rootPath);
+  } else {
+    res.status(404).send('หาไฟล์ index.html ไม่เจอ กรุณาตรวจสอบตำแหน่งไฟล์บน GitHub');
+  }
+});
+
+// ระบบ Real-Time ผ่าน Socket.io
 io.on('connection', (socket) => {
   socket.emit('init_data', queues);
 
