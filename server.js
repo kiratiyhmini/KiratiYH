@@ -10,7 +10,7 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'data', 'queues.json');
+const DATA_FILE = path.join(__dirname, 'queues.json');
 
 app.use(cors());
 app.use(express.json());
