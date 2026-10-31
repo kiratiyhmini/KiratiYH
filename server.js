@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 
@@ -11,63 +10,61 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 const PORT = process.env.PORT || 3000;
 
-// กำหนดตำแหน่งเก็บไฟล์ข้อมูลไว้ที่โฟลเดอร์หลัก (ไม่ต้องมีโฟลเดอร์ data)
-const DATA_FILE = path.join(__dirname, 'queues.json');
+// ====== ใส่รหัสจาก JSONBin.io เรียบร้อยแล้ว ======
+const BIN_ID = process.env.BIN_ID || '6ae61279ffd5d160539b90b5';
+const MASTER_KEY = process.env.MASTER_KEY || '$2a$10$uv1IidlkVb0.JjJwB0dd8eu1ir..lJ3sZx/9AqcxOmmxHwi4CnURO';
+// ============================================
 
 app.use(cors());
 app.use(express.json());
-
-// รองรับการเปิดหน้าเว็บทั้งจากโฟลเดอร์ public และหน้าหลัก
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(__dirname));
 
-// ฟังก์ชันโหลดข้อมูล
-function loadQueues() {
+let queues = [];
+
+// ดึงข้อมูลจาก Cloud เมื่อเริ่มรันเซิร์ฟเวอร์
+async function loadQueuesFromCloud() {
   try {
-    if (!fs.existsSync(DATA_FILE)) {
-      fs.writeFileSync(DATA_FILE, JSON.stringify([]), 'utf-8');
+    const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: {
+        'X-Master-Key': MASTER_KEY
+      }
+    });
+
+    if (!response.ok) {
+      console.error('ไม่สามารถดึงข้อมูลได้ รหัสสถานะ:', response.status);
       return [];
     }
-    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    return JSON.parse(raw);
+
+    const result = await response.json();
+    return Array.isArray(result.record) ? result.record : [];
   } catch (err) {
-    console.error('Error reading data:', err);
+    console.error('Error fetching data from JSONBin:', err);
     return [];
   }
 }
 
-// ฟังก์ชันบันทึกข้อมูล
-function saveQueues(data) {
+// ส่งข้อมูลไปบันทึกบน Cloud
+async function saveQueuesToCloud(data) {
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': MASTER_KEY
+      },
+      body: JSON.stringify(data)
+    });
   } catch (err) {
-    console.error('Error saving data:', err);
+    console.error('Error saving data to JSONBin:', err);
   }
 }
 
-let queues = loadQueues();
-
-// จัดการหน้าแรก ป้องกันปัญหา Cannot GET /
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/socket.io/')) return next();
-  const publicPath = path.join(__dirname, 'public', 'index.html');
-  const rootPath = path.join(__dirname, 'index.html');
-  if (fs.existsSync(publicPath)) {
-    res.sendFile(publicPath);
-  } else if (fs.existsSync(rootPath)) {
-    res.sendFile(rootPath);
-  } else {
-    res.status(404).send('หาไฟล์ index.html ไม่เจอ กรุณาตรวจสอบตำแหน่งไฟล์บน GitHub');
-  }
-});
-
-// ระบบ Real-Time ผ่าน Socket.io
 io.on('connection', (socket) => {
   socket.emit('init_data', queues);
 
   socket.on('add_queue', (newQueue) => {
     queues.unshift(newQueue);
-    saveQueues(queues);
+    saveQueuesToCloud(queues);
     io.emit('queue_added', newQueue);
   });
 
@@ -75,7 +72,7 @@ io.on('connection', (socket) => {
     const queue = queues.find(q => q.id === id);
     if (queue) {
       queue.status = queue.status === 'completed' ? 'pending' : 'completed';
-      saveQueues(queues);
+      saveQueuesToCloud(queues);
       io.emit('status_updated', { id: queue.id, status: queue.status });
     }
   });
@@ -84,18 +81,26 @@ io.on('connection', (socket) => {
     const index = queues.findIndex(q => q.id === updatedData.id);
     if (index !== -1) {
       queues[index] = { ...queues[index], ...updatedData };
-      saveQueues(queues);
+      saveQueuesToCloud(queues);
       io.emit('queue_updated', queues[index]);
     }
   });
 
   socket.on('delete_queue', (id) => {
     queues = queues.filter(q => q.id !== id);
-    saveQueues(queues);
+    saveQueuesToCloud(queues);
     io.emit('queue_deleted', id);
   });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`เซิร์ฟเวอร์เปิดทำงานแล้วที่ Port ${PORT}`);
-});
+async function startServer() {
+  console.log('กำลังโหลดข้อมูลคิวจาก Cloud...');
+  queues = await loadQueuesFromCloud();
+  console.log(`โหลดข้อมูลสำเร็จ พบทั้งหมด ${queues.length} รายการ`);
+
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`เซิร์ฟเวอร์เปิดทำงานแล้วที่ Port ${PORT}`);
+  });
+}
+
+startServer();
