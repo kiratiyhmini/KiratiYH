@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ระบบคิวงาน (โหมดใช้งานแบบออฟไลน์/เปิดบนมือถือได้ทันที)</title>
+  <style>
+    * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Prompt", "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: #0f172a;
+  color: #f8fafc;
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+.app-header {
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 14px 16px;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.header-top h1 {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.live-status {
+  font-size: 0.75rem;
+  color: #10b981;
+  margin-top: 2px;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 9px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-primary:active {
+  background: #1d4ed8;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.stat-card {
+  background: #0f172a;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  text-align: center;
+}
+
+.stat-card .label {
+  display: block;
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.stat-card b {
+  font-size: 0.95rem;
+  margin-top: 2px;
+  display: block;
+}
+
+.text-red { color: #f87171; }
+.text-green { color: #34d399; }
+.text-blue { color: #60a5fa; }
+
+.controls-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.controls-bar input {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 6px 4px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #94a3b8;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.queue-container {
+  max-width: 640px;
+  margin: 14px auto;
+  padding: 0 14px;
+}
+
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.queue-card {
+  background: #1e293b;
+  border-radius: 12px;
+  border: 1px solid #334155;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.queue-card.completed {
+  border-left: 6px solid #10b981;
+}
+
+.queue-card.pending {
+  border-left: 6px solid #ef4444;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-badge {
+  background: #334155;
+  color: #38bdf8;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.card-datetime {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.card-job {
+  font-size: 1rem;
+  line-height: 1.4;
+  color: #f1f5f9;
+  word-break: break-word;
+}
+
+.card-notes {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  background: #0f172a;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 10px;
+}
+
+.amount {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+/* ปุ่มสลับสถานะ เขียว/แดง โดดเด่น */
+.btn-toggle {
+  flex: 1;
+  max-width: 160px;
+  height: 42px;
+  border: none;
+  border-radius: 21px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.btn-toggle:active {
+  transform: scale(0.96);
+}
+
+.btn-toggle.completed {
+  background: #10b981;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35);
+}
+
+.btn-toggle.pending {
+  background: #ef4444;
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.35);
+}
+
+.card-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  font-size: 1.15rem;
+  padding: 6px;
+  cursor: pointer;
+}
+
+/* Modal Popup */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+
+.modal-backdrop.open {
+  display: flex;
+}
+
+.modal-content {
+  background: #1e293b;
+  border-radius: 14px;
+  border: 1px solid #334155;
+  width: 100%;
+  max-width: 440px;
+  padding: 20px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+}
+
+.flex-1 { flex: 1; }
+
+label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #cbd5e1;
+}
+
+input, textarea {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: #fff;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+input:focus, textarea:focus {
+  border-color: #2563eb;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.btn-secondary {
+  flex: 1;
+  background: #334155;
+  color: #cbd5e1;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.modal-actions .btn-primary {
+  flex: 1.5;
+  padding: 10px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #1e293b;
+  border: 1px solid #2563eb;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  transition: transform 0.3s ease;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 10px;
+  color: #94a3b8;
+}
+
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-top">
+      <div>
+        <h1>ระบบจัดการคิวงาน</h1>
+        <div class="live-status">● โหมดออฟไลน์ (บันทึกลงในเครื่อง)</div>
+      </div>
+      <button class="btn-primary" id="btnOpenModal">+ เพิ่มคิว</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><span class="label">คิวทั้งหมด</span><b id="statTotal">0</b></div>
+      <div class="stat-card danger"><span class="label">ยังไม่เสร็จ</span><b id="statPending" class="text-red">0</b></div>
+      <div class="stat-card success"><span class="label">เสร็จแล้ว</span><b id="statCompleted" class="text-green">0</b></div>
+      <div class="stat-card income"><span class="label">ยอดเงินรวม</span><b id="statIncome" class="text-blue">฿0</b></div>
+    </div>
+
+    <div class="controls-bar">
+      <input type="text" id="searchInput" placeholder="🔍 ค้นหาเลขคิว, ชื่องาน...">
+      <div class="filter-tabs">
+        <button class="tab-btn active" data-filter="all">ทั้งหมด</button>
+        <button class="tab-btn" data-filter="pending">ยังไม่เสร็จ (แดง)</button>
+        <button class="tab-btn" data-filter="completed">เสร็จแล้ว (เขียว)</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="queue-container">
+    <div id="queueList" class="queue-list"></div>
+    <div id="emptyState" class="empty-state" style="display: none;"><p>ยังไม่มีรายการคิว</p></div>
+  </main>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">เพิ่มคิวงานใหม่</h2>
+        <button class="btn-close" id="btnCloseModal">&times;</button>
+      </div>
+      <form id="queueForm">
+        <input type="hidden" id="editId">
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="queueNo">เลขคิวที่ *</label>
+            <input type="text" id="queueNo" required placeholder="เช่น Q-001">
+          </div>
+          <div class="form-group flex-1">
+            <label for="amount">จำนวนเงิน (บาท) *</label>
+            <input type="number" id="amount" required min="0" step="any" placeholder="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="date">วันที่ *</label>
+            <input type="date" id="date" required>
+          </div>
+          <div class="form-group flex-1">
+            <label for="time">เวลา *</label>
+            <input type="time" id="time" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="jobTitle">งานที่รับมา *</label>
+          <textarea id="jobTitle" rows="3" required placeholder="ระบุชื่องาน หรือรายละเอียดที่รับมา..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="notes">หมายเหตุ (ถ้ามี)</label>
+          <input type="text" id="notes" placeholder="เช่น นัดรับพรุ่งนี้, มัดจำแล้ว">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="btnCancelModal">ยกเลิก</button>
+          <button type="submit" class="btn-primary">บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let queues = JSON.parse(localStorage.getItem('my_queues') || '[]');
+    let currentFilter = 'all';
+    let searchQuery = '';
+
+    const queueListEl = document.getElementById('queueList');
+    const emptyStateEl = document.getElementById('emptyState');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const queueForm = document.getElementById('queueForm');
+
+    function save() {
+      localStorage.setItem('my_queues', JSON.stringify(queues));
+      updateStats();
+      render();
+    }
+
+    function updateStats() {
+      document.getElementById('statTotal').textContent = queues.length;
+      document.getElementById('statCompleted').textContent = queues.filter(q => q.status === 'completed').length;
+      document.getElementById('statPending').textContent = queues.filter(q => q.status === 'pending').length;
+      const amount = queues.reduce((sum, q) => sum + (parseFloat(q.amount) || 0), 0);
+      document.getElementById('statIncome').textContent = '฿' + amount.toLocaleString('th-TH');
+    }
+
+    function render() {
+      const filtered = queues.filter(q => {
+        if (currentFilter === 'pending' && q.status !== 'pending') return false;
+        if (currentFilter === 'completed' && q.status !== 'completed') return false;
+        if (searchQuery.trim()) {
+          const term = searchQuery.toLowerCase();
+          return (q.queueNo||'').toLowerCase().includes(term) || (q.jobTitle||'').toLowerCase().includes(term);
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        queueListEl.innerHTML = '';
+        emptyStateEl.style.display = 'block';
+        return;
+      }
+      emptyStateEl.style.display = 'none';
+
+      queueListEl.innerHTML = filtered.map(q => {
+        const isDone = q.status === 'completed';
+        return `
+          <div class="queue-card ${isDone ? 'completed' : 'pending'}">
+            <div class="card-top">
+              <span class="card-badge">${q.queueNo}</span>
+              <span class="card-datetime">📅 ${q.date} ⏰ ${q.time} น.</span>
+            </div>
+            <div class="card-job">${q.jobTitle}</div>
+            ${q.notes ? `<div class="card-notes">📝 ${q.notes}</div>` : ''}
+            <div class="card-bottom">
+              <div class="amount">฿${(parseFloat(q.amount)||0).toLocaleString('th-TH')}</div>
+              <button class="btn-toggle ${isDone ? 'completed' : 'pending'}" onclick="toggleStatus('${q.id}')">
+                ${isDone ? '🟢 เสร็จแล้ว' : '🔴 ยังไม่เสร็จ'}
+              </button>
+              <div class="card-actions">
+                <button class="btn-icon" onclick="deleteQueue('${q.id}')">🗑️</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.toggleStatus = function(id) {
+      if (navigator.vibrate) navigator.vibrate(40);
+      const q = queues.find(item => item.id === id);
+      if (q) {
+        q.status = q.status === 'completed' ? 'pending' : 'completed';
+        save();
+      }
+    };
+
+    window.deleteQueue = function(id) {
+      if (confirm('คุณต้องการลบคิวนี้หรือไม่?')) {
+        queues = queues.filter(q => q.id !== id);
+        save();
+      }
+    };
+
+    document.getElementById('btnOpenModal').onclick = () => {
+      queueForm.reset();
+      document.getElementById('editId').value = '';
+      const now = new Date();
+      document.getElementById('date').value = now.toISOString().split('T')[0];
+      document.getElementById('time').value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      document.getElementById('queueNo').value = `Q-${String(queues.length + 1).padStart(3, '0')}`;
+      modalBackdrop.classList.add('open');
+    };
+
+    document.getElementById('btnCloseModal').onclick = () => modalBackdrop.classList.remove('open');
+    document.getElementById('btnCancelModal').onclick = () => modalBackdrop.classList.remove('open');
+
+    queueForm.onsubmit = e => {
+      e.preventDefault();
+      queues.unshift({
+        id: 'q-' + Date.now(),
+        queueNo: document.getElementById('queueNo').value.trim(),
+        amount: parseFloat(document.getElementById('amount').value) || 0,
+        date: document.getElementById('date').value,
+        time: document.getElementById('time').value,
+        jobTitle: document.getElementById('jobTitle').value.trim(),
+        notes: document.getElementById('notes').value.trim(),
+        status: 'pending'
+      });
+      save();
+      modalBackdrop.classList.remove('open');
+    };
+
+    document.getElementById('searchInput').oninput = e => {
+      searchQuery = e.target.value;
+      render();
+    };
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        render();
+      };
+    });
+
+    updateStats();
+    render();
+  </script>
+</body>
+</html>

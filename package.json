@@ -1,0 +1,14 @@
+{
+  "name": "realtime-queue-manager",
+  "version": "2.0.0",
+  "description": "ระบบจัดการคิวงานแบบ Real-Time สำหรับมือถือ Android",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "cors": "^2.8.5"
+  }
+}
