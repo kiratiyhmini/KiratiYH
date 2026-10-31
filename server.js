@@ -17,6 +17,10 @@ const MASTER_KEY = '$2a$10$uv1IidlkVb0.JjJwB0dd8eu1ir..lJ3sZx/9AqcxOmmxHwi4CnURO
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 
 let queues = [];
 
